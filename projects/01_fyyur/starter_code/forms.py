@@ -13,10 +13,15 @@ from wtforms.validators import DataRequired, AnyOf, URL, Length, Optional, Regex
 
 
 class ShowForm(Form):
-    artist_id = StringField("artist_id")
-    venue_id = StringField("venue_id")
+    artist_id = StringField(
+        "artist_id", validators=[DataRequired(), Regexp("^[0-9]*$")]
+    )
+    venue_id = StringField("venue_id", validators=[DataRequired(), Regexp("^[0-9]*$")])
     start_time = DateTimeField(
-        "start_time", validators=[DataRequired()], default=datetime.today()
+        "start_time",
+        validators=[DataRequired()],
+        default=datetime.today(),
+        format="%Y-%m-%d %H:%M:%S",
     )
 
 
