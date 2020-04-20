@@ -99,6 +99,14 @@ endblock %} {% block content %}
         value="Delete"
       />
     </form>
+    <div class="col-sm-2">
+      <a
+        class="btn btn-warning btn-sm btn-block"
+        href="{{ url_for('edit_artist_submission', artist_id=artist.id) }}"
+      >
+        Edit
+      </a>
+    </div>
   </div>
 </section>
 
