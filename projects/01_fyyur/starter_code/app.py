@@ -48,6 +48,7 @@ class Venue(db.Model):
     seeking_talent = db.Column(db.Boolean, nullable=False, default=False)
     seeking_description = db.Column(db.String(300), nullable=False)
     shows = db.relationship("Show", cascade="all,delete", backref="venue", lazy=True)
+    # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 
 class Artist(db.Model):
@@ -65,6 +66,7 @@ class Artist(db.Model):
     seeking_venue = db.Column(db.Boolean, nullable=False, default=False)
     seeking_description = db.Column(db.String(300), nullable=False)
     shows = db.relationship("Show", cascade="all,delete", backref="artist", lazy=True)
+    # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 
 class Show(db.Model):
@@ -164,50 +166,55 @@ def search_venues():
 @app.route("/venues/<int:venue_id>")
 def show_venue(venue_id):
     data = []
+    try:
+        venue = Venue.query.get(venue_id)
+        records = (
+            db.session.query(Show, Artist)
+            .join(Artist)
+            .filter(Show.venue_id == venue_id)
+            .all()
+        )
 
-    venue = Venue.query.get(venue_id)
-    records = (
-        db.session.query(Show, Artist)
-        .join(Artist)
-        .filter(Show.venue_id == venue_id)
-        .all()
-    )
+        past_data = []
+        upcoming_data = []
+        for record in records:
 
-    past_data = []
-    upcoming_data = []
-    for record in records:
+            d = {
+                "artist_id": record[1].id,
+                "artist_name": record[1].name,
+                "artist_image_link": record[1].image_link,
+                "start_time": record[0].start_time.strftime("%m/%d/%Y, %H:%M:%S"),
+            }
 
-        d = {
-            "artist_id": record[1].id,
-            "artist_name": record[1].name,
-            "artist_image_link": record[1].image_link,
-            "start_time": record[0].start_time.strftime("%m/%d/%Y, %H:%M:%S"),
+            cutoff_time = datetime.now() - timedelta(hours=3)
+            if record[0].start_time <= cutoff_time:
+                past_data.append(d)
+            else:
+                upcoming_data.append(d)
+
+        data = {
+            "id": venue.id,
+            "name": venue.name,
+            "genres": venue.genres.split(","),
+            "address": venue.address,
+            "city": venue.city,
+            "state": venue.state,
+            "phone": venue.phone,
+            "website": venue.website,
+            "facebook_link": venue.facebook_link,
+            "seeking_talent": venue.seeking_talent,
+            "seeking_description": venue.seeking_description,
+            "image_link": venue.image_link,
+            "past_shows": past_data,
+            "upcoming_shows": upcoming_data,
+            "past_shows_count": len(past_data),
+            "upcoming_shows_count": len(upcoming_data),
         }
-
-        cutoff_time = datetime.now() - timedelta(hours=3)
-        if record[0].start_time <= cutoff_time:
-            past_data.append(d)
-        else:
-            upcoming_data.append(d)
-
-    data = {
-        "id": venue.id,
-        "name": venue.name,
-        "genres": venue.genres.split(","),
-        "address": venue.address,
-        "city": venue.city,
-        "state": venue.state,
-        "phone": venue.phone,
-        "website": venue.website,
-        "facebook_link": venue.facebook_link,
-        "seeking_talent": venue.seeking_talent,
-        "seeking_description": venue.seeking_description,
-        "image_link": venue.image_link,
-        "past_shows": past_data,
-        "upcoming_shows": upcoming_data,
-        "past_shows_count": len(past_data),
-        "upcoming_shows_count": len(upcoming_data),
-    }
+        db.session.commit()
+    except:
+        db.session.rollback()
+    finally:
+        db.session.close()
 
     return render_template("pages/show_venue.html", venue=data)
 
@@ -374,16 +381,20 @@ def artists():
 @app.route("/artists/search", methods=["POST"])
 def search_artists():
     response = {}
-
     search_term = request.form.get("search_term", "")
-
-    query = Artist.query.filter(Artist.name.ilike(f"%{search_term}%"))
-    artists_count = query.count()
-    artists = query.order_by(Artist.name).all()
-    data = []
-    for artist in artists:
-        data.append({"id": artist.id, "name": artist.name})
-    response = {"count": artists_count, "data": data}
+    try:
+        query = Artist.query.filter(Artist.name.ilike(f"%{search_term}%"))
+        artists_count = query.count()
+        artists = query.order_by(Artist.name).all()
+        data = []
+        for artist in artists:
+            data.append({"id": artist.id, "name": artist.name})
+        response = {"count": artists_count, "data": data}
+        db.session.commit()
+    except:
+        db.session.rollback()
+    finally:
+        db.session.close()
 
     return render_template(
         "pages/search_artists.html", results=response, search_term=search_term,
@@ -394,49 +405,54 @@ def search_artists():
 def show_artist(artist_id):
 
     data = {}
+    try:
+        artist = Artist.query.get(artist_id)
+        records = (
+            db.session.query(Show, Venue)
+            .join(Venue)
+            .filter(Show.artist_id == artist_id)
+            .all()
+        )
 
-    artist = Artist.query.get(artist_id)
-    records = (
-        db.session.query(Show, Venue)
-        .join(Venue)
-        .filter(Show.artist_id == artist_id)
-        .all()
-    )
+        past_data = []
+        upcoming_data = []
+        for record in records:
 
-    past_data = []
-    upcoming_data = []
-    for record in records:
+            d = {
+                "venue_id": record[1].id,
+                "venue_name": record[1].name,
+                "venue_image_link": record[1].image_link,
+                "start_time": record[0].start_time.strftime("%m/%d/%Y, %H:%M:%S"),
+            }
 
-        d = {
-            "venue_id": record[1].id,
-            "venue_name": record[1].name,
-            "venue_image_link": record[1].image_link,
-            "start_time": record[0].start_time.strftime("%m/%d/%Y, %H:%M:%S"),
+            cutoff_time = datetime.now() - timedelta(hours=3)
+            if record[0].start_time <= cutoff_time:
+                past_data.append(d)
+            else:
+                upcoming_data.append(d)
+
+        data = {
+            "id": artist.id,
+            "name": artist.name,
+            "genres": artist.genres.split(","),
+            "city": artist.city,
+            "state": artist.state,
+            "phone": artist.phone,
+            "website": artist.website,
+            "facebook_link": artist.facebook_link,
+            "seeking_venue": artist.seeking_venue,
+            "seeking_description": artist.seeking_description,
+            "image_link": artist.image_link,
+            "past_shows": past_data,
+            "upcoming_shows": upcoming_data,
+            "past_shows_count": len(past_data),
+            "upcoming_shows_count": len(upcoming_data),
         }
-
-        cutoff_time = datetime.now() - timedelta(hours=3)
-        if record[0].start_time <= cutoff_time:
-            past_data.append(d)
-        else:
-            upcoming_data.append(d)
-
-    data = {
-        "id": artist.id,
-        "name": artist.name,
-        "genres": artist.genres.split(","),
-        "city": artist.city,
-        "state": artist.state,
-        "phone": artist.phone,
-        "website": artist.website,
-        "facebook_link": artist.facebook_link,
-        "seeking_venue": artist.seeking_venue,
-        "seeking_description": artist.seeking_description,
-        "image_link": artist.image_link,
-        "past_shows": past_data,
-        "upcoming_shows": upcoming_data,
-        "past_shows_count": len(past_data),
-        "upcoming_shows_count": len(upcoming_data),
-    }
+        db.session.commit()
+    except:
+        db.session.rollback()
+    finally:
+        db.session.close()
 
     return render_template("pages/show_artist.html", artist=data)
 
@@ -453,8 +469,7 @@ def create_artist_submission():
     form = ArtistForm(request.form)
     if form.validate():
         try:
-            genres = (str(form.genres.data).strip("[]")
-                      .replace("'", "").replace(" ", ""))
+            genres = str(form.genres.data).strip("[]").replace("'", "").replace(" ", "")
 
             artist = Artist(
                 name=form.name.data,

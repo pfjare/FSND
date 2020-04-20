@@ -5,19 +5,18 @@ from wtforms import (
     SelectField,
     SelectMultipleField,
     DateTimeField,
+    TextAreaField,
     BooleanField,
+    SubmitField,
 )
-from wtforms.validators import DataRequired, URL, Optional, Regexp
+from wtforms.validators import DataRequired, AnyOf, URL, Length, Optional, Regexp
 
 
 class ShowForm(Form):
     artist_id = StringField(
         "artist_id", validators=[DataRequired(), Regexp("^[0-9]*$")]
     )
-    venue_id = StringField("venue_id", validators=[
-        DataRequired(),
-        Regexp("^[0-9]*$")
-    ])
+    venue_id = StringField("venue_id", validators=[DataRequired(), Regexp("^[0-9]*$")])
     start_time = DateTimeField(
         "start_time",
         validators=[DataRequired()],
