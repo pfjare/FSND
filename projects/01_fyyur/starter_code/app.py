@@ -109,31 +109,26 @@ def index():
 
 @app.route("/venues")
 def venues():
-    # TODO: replace with real venues data.
-    #       num_shows should be aggregated based on number of upcoming shows per venue.
+    
     areas = []
-    try:
-        query = Venue.query.distinct("city", "state").all()
 
-        for item in query:
+    query = Venue.query.distinct("city", "state").all()
 
-            venues_query = (
-                Venue.query.filter_by(city=item.city, state=item.state)
-                .order_by(Venue.name)
-                .all()
-            )
-            venue_data = []
-            for item in venues_query:
-                data = {"id": item.id, "name": item.name, "num_upcoming_shows": 0}
-                venue_data.append(data)
-            area = {"city": item.city, "state": item.state, "venues": venue_data}
-            areas.append(area)
+    for item in query:
 
-        db.session.commit()
-    except:
-        db.session.rollback()
-    finally:
-        db.session.close()
+        venues_query = (
+            Venue.query.filter_by(city=item.city, state=item.state)
+            .order_by(Venue.name)
+            .all()
+        )
+        venue_data = []
+        for item in venues_query:
+            data = {"id": item.id, "name": item.name, "num_upcoming_shows": 0}
+            venue_data.append(data)
+
+        area = {"city": item.city, "state": item.state, "venues": venue_data}
+        areas.append(area)
+
 
     return render_template("pages/venues.html", areas=areas)
 
@@ -143,19 +138,17 @@ def search_venues():
 
     response = {}
     search_term = request.form.get("search_term", "")
-    try:
-        query = Venue.query.filter(Venue.name.ilike(f"%{search_term}%"))
-        venues_count = query.count()
-        venues = query.order_by(Venue.name).all()
-        data = []
-        for venue in venues:
-            data.append({"id": venue.id, "name": venue.name})
-        response = {"count": venues_count, "data": data}
-        db.session.commit()
-    except:
-        db.session.rollback()
-    finally:
-        db.session.close()
+ 
+    query = Venue.query.filter(Venue.name.ilike(f"%{search_term}%"))
+    venues_count = query.count()
+    venues = query.order_by(Venue.name).all()
+
+    data = []
+    for venue in venues:
+        data.append({"id": venue.id, "name": venue.name})
+
+    response = {"count": venues_count, "data": data}
+
     return render_template(
         "pages/search_venues.html", results=response, search_term=search_term,
     )
@@ -264,26 +257,20 @@ def create_venue_submission():
 def edit_venue_submission(venue_id):
     form = VenueForm(request.form)
     if request.method == "GET":
-        try:
-            venue = Venue.query.get(venue_id)
+        
+        venue = Venue.query.get(venue_id)
 
-            form.name.data = venue.name
-            form.city.data = venue.city
-            form.state.data = venue.state
-            form.address.data = venue.address
-            form.phone.data = venue.phone
-            form.website.data = venue.website
-            form.image_link.data = venue.image_link
-            form.facebook_link.data = venue.facebook_link
-            form.seeking_talent.data = venue.seeking_talent
-            form.seeking_description.data = venue.seeking_description
+        form.name.data = venue.name
+        form.city.data = venue.city
+        form.state.data = venue.state
+        form.address.data = venue.address
+        form.phone.data = venue.phone
+        form.website.data = venue.website
+        form.image_link.data = venue.image_link
+        form.facebook_link.data = venue.facebook_link
+        form.seeking_talent.data = venue.seeking_talent
+        form.seeking_description.data = venue.seeking_description
 
-            db.session.commit()
-        except:
-            db.session.rollback()
-            print(sys.exc_info())
-        finally:
-            db.session.close()
         return render_template("forms/edit_venue.html", form=form)
 
     if request.method == "POST" and form.validate():
@@ -351,23 +338,17 @@ def delete_venue(venue_id):
 @app.route("/artists")
 def artists():
 
-    try:
-        artists = Artist.query.order_by(Artist.name).all()
+    artists = Artist.query.order_by(Artist.name).all()
 
-        artist_data = []
-        for artist in artists:
+    artist_data = []
+    for artist in artists:
 
-            data = {
-                "id": artist.id,
-                "name": artist.name,
-            }
-            artist_data.append(data)
-            db.session.commit()
-    except:
-        db.session.rollback()
-    finally:
-        db.session.close()
-
+        data = {
+            "id": artist.id,
+            "name": artist.name,
+        }
+        artist_data.append(data)
+    
     return render_template("pages/artists.html", artists=artist_data)
 
 
@@ -497,25 +478,20 @@ def edit_artist_submission(artist_id):
 
     form = ArtistForm(request.form)
     if request.method == "GET":
-        try:
-            artist = Artist.query.get(artist_id)
+    
+        artist = Artist.query.get(artist_id)
 
-            form.name.data = artist.name
-            form.city.data = artist.city
-            form.state.data = artist.state
-            form.phone.data = artist.phone
-            form.website.data = artist.website
-            form.image_link.data = artist.image_link
-            form.facebook_link.data = artist.facebook_link
-            form.seeking_venue.data = artist.seeking_venue
-            form.seeking_description.data = artist.seeking_description
+        form.name.data = artist.name
+        form.city.data = artist.city
+        form.state.data = artist.state
+        form.phone.data = artist.phone
+        form.website.data = artist.website
+        form.image_link.data = artist.image_link
+        form.facebook_link.data = artist.facebook_link
+        form.seeking_venue.data = artist.seeking_venue
+        form.seeking_description.data = artist.seeking_description
 
-            db.session.commit()
-        except:
-            db.session.rollback()
-            print(sys.exc_info())
-        finally:
-            db.session.close()
+
         return render_template("forms/edit_artist.html", form=form)
 
     if request.method == "POST" and form.validate():
@@ -580,27 +556,22 @@ def delete_artist(artist_id):
 @app.route("/shows")
 def shows():
     shows_data = []
-    try:
-        query = db.session.query(Show, Artist, Venue).join(Artist).join(Venue)
-        records = query.all()
+   
+    query = db.session.query(Show, Artist, Venue).join(Artist).join(Venue)
+    records = query.order_by(Show.start_time.desc()).all()
 
-        for record in records:
+    for record in records:
 
-            data1 = {
-                "venue_id": record[2].id,
-                "venue_name": record[2].name,
-                "artist_id": record[1].id,
-                "artist_name": record[1].name,
-                "artist_image_link": record[1].image_link,
-                "start_time": record[0].start_time.strftime("%m/%d/%Y, %H:%M:%S"),
-            }
+        data1 = {
+            "venue_id": record[2].id,
+            "venue_name": record[2].name,
+            "artist_id": record[1].id,
+            "artist_name": record[1].name,
+            "artist_image_link": record[1].image_link,
+            "start_time": record[0].start_time.strftime("%m/%d/%Y, %H:%M:%S"),
+        }
 
-            shows_data.append(data1)
-        db.session.commit()
-    except:
-        db.session.rollback()
-    finally:
-        db.session.close()
+        shows_data.append(data1)
 
     return render_template("pages/shows.html", shows=shows_data)
 
