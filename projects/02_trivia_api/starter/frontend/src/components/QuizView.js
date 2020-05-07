@@ -35,8 +35,8 @@ class QuizView extends Component {
     });
   }
 
-  selectCategory = (id = 0) => {
-    this.setState({ quizCategory: id }, this.getNextQuestion);
+  selectCategory = ({ type, id = 0 }) => {
+    this.setState({ quizCategory: { type, id } }, this.getNextQuestion);
   };
 
   handleChange = (event) => {
@@ -56,7 +56,7 @@ class QuizView extends Component {
       contentType: "application/json",
       data: JSON.stringify({
         previous_questions: previousQuestions,
-        quiz_category: this.state.quizCategory,
+        quiz_category: this.state.quizCategory.id,
       }),
       xhrFields: {
         withCredentials: true,
@@ -117,7 +117,9 @@ class QuizView extends Component {
                 key={id}
                 value={id}
                 className="play-category"
-                onClick={() => this.selectCategory(id)}
+                onClick={() =>
+                  this.selectCategory({ type: this.state.categories[id], id })
+                }
               >
                 {this.state.categories[id]}
               </div>

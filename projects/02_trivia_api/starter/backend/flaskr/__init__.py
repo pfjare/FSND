@@ -43,10 +43,12 @@ def create_app(test_config=None):
         start = (page-1)*10
         end = start + 10
         questions = Question.query.order_by(Question.id).all()
+        # Check if there are questions on selected page
         if len(questions[start:end]) == 0:
             abort(404)
         formatted_questions = [question.format() for question in questions]
         categories = Category.query.all()
+        # Check if there are categories in db
         if len(categories) == 0:
             abort(404)
         return jsonify({
@@ -65,6 +67,7 @@ def create_app(test_config=None):
         answer = data.get('answer', None)
         category = data.get('category', None)
         difficulty = data.get('difficulty', None)
+        # Check if all required info is in request body
         if question and answer and category and difficulty:
             try:
                 question = Question(question=question,
@@ -128,12 +131,14 @@ def create_app(test_config=None):
         end = start + 10
         category = Category.query.filter(
             Category.id == category_id).one_or_none()
+        # Check if there are categories in db
         if category is None:
             abort(404)
         questions = Question.query.filter(
             Question.category == category_id).all()
 
         formatted_questions = [question.format() for question in questions]
+        # Check if there are questions on selected page
         if len(questions[start:end]) == 0:
             abort(404)
 
@@ -150,20 +155,22 @@ def create_app(test_config=None):
 
         previous_questions = data.get('previous_questions', [])
         quiz_category = data.get('quiz_category', None)
+        # Check if quiz category is provided
         if quiz_category is None:
             abort(400)
+        # If quiz category is 0 return ALL questions
         if quiz_category == 0:
+            # Get questions in random order
             questions = Question.query.order_by(func.random()).all()
-            print(previous_questions)
-
         else:
-            print(quiz_category)
+            # Get questions in random order
             questions = Question.query.filter(
                 Question.category == quiz_category).order_by(func.random()).all()
-        print(questions)
+        # Create question set that has no previous questions
         new_questions = [
             question for question in questions if question.id not in previous_questions]
-        print(new_questions)
+
+        # Select single question from available questions
         if new_questions:
             formatted_question = new_questions[0].format()
         else:
