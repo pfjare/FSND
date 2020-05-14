@@ -37,7 +37,7 @@ def get_drinks():
 
 @app.route('/drinks-detail', methods=['GET'])
 @requires_auth('get:drinks-detail')
-def get_drinks_detail(payload):
+def get_drinks_detail():
     drinks = Drink.query.all()
     return jsonify({
         "success": True,
@@ -55,14 +55,20 @@ def get_drinks_detail(payload):
 
 @app.route('/drinks', methods=['POST'])
 @requires_auth('post:drinks')
-def post_drinks(payload):
+def post_drinks():
     data = request.get_json()
     title = data.get('title', None)
     recipe = data.get('recipe', None)
-    drink = Drink(title=title, recipe=json.dumps(recipe))
-    
-    drink.insert()
-    
+
+    if recipe is None or title is None:
+        abort(422)
+    try:
+        drink = Drink(title=title, recipe=json.dumps(recipe))
+        drink.insert()
+    except exc.SQLAlchemyError as error:
+        print(error)
+        abort(422)
+
     return jsonify({
         "success": True,
         "drinks": drink.long()
@@ -91,7 +97,55 @@ def post_drinks(payload):
         or appropriate status code indicating reason for failure
 '''
 
+@app.route('/drinks/<int:drink_id>', methods=['PATCH'])
+@requires_auth('patch:drinks')
+def update_drinks(drink_id):
+    
+    data = request.get_json()
+    title = data.get('title', None)
+    recipe = data.get('recipe', None)
+    if recipe is None and title is None:
+        abort(422)
+   
+    drink = Drink.query.filter(Drink.id == drink_id).one_or_none()
+    print(drink)
+    if drink is None:
+        abort(404)
+   
+    try:
+        if title:
+            drink.title = title
+        if recipe:
+            drink.recipe = json.dumps(recipe)
+        drink.update()
 
+    except exc.SQLAlchemyError as error:
+        print(error)
+        abort(422)
+    
+    return jsonify({
+        "success": True,
+        "drinks": drink.long()
+    })
+
+@app.route('/drinks/<int:drink_id>', methods=['DELETE'])
+@requires_auth('delete:drinks')
+def delete_drinks(drink_id):
+    drink = Drink.query.filter(Drink.id == drink_id).one_or_none()
+    if drink is None:
+        abort(404)
+    
+    try:
+        drink.delete()
+
+    except exc.SQLAlchemyError as error:
+        print(error)
+        abort(422)
+    return jsonify({
+        "success": True,
+        "delete": drink.id
+    })
+    
 '''
 @TODO implement endpoint
     DELETE /drinks/<id>
@@ -104,7 +158,7 @@ def post_drinks(payload):
 '''
 
 
-## Error Handling
+# Error Handling
 
 @app.errorhandler(422)
 def unprocessable(error):
@@ -114,9 +168,9 @@ def unprocessable(error):
         "message": "unprocessable"
         }), 422
 
-@app.errorhandler(404) 
-def not_found(error):
-    jsonify({
+@app.errorhandler(404)
+def resource_not_found(error):
+    return jsonify({
         "success": False, 
         "error": 404,
         "message": "resource not found"
