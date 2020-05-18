@@ -9,6 +9,7 @@ AUTH0_DOMAIN = 'classudacity.auth0.com'
 ALGORITHMS = ['RS256']
 API_AUDIENCE = 'coffee'
 
+# clientId: "0p05fRWKlFcByjn0Jx2G1qmj0ioiglgI"
 
 # AuthError Exception
 class AuthError(Exception):
